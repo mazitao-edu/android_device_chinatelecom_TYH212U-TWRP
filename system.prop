@@ -1,0 +1,21 @@
+# USB 控制器（展锐 musb HDRC）
+sys.usb.controller=musb-hdrc.0.auto
+ro.boot.usbcontroller=musb-hdrc
+
+# 动态分区（fastbootd 必需，否则 fastbootd 起不来）
+ro.boot.dynamic_partitions=true
+ro.boot.dynamic_partitions_retrofit=false
+
+# Virtual A/B（展锐 ums9620 是 Virtual A/B，缺这个 fastbootd 直接退出）
+ro.boot.virtual_ab=true
+ro.virtual_ab.enabled=true
+
+# Fastbootd 可用
+ro.fastbootd.available=true
+
+# A/B slot（让 TWRP 识别为 A/B 设备，启用 slot 切换）
+ro.boot.slot_suffix=_a
+ro.boot.slotsuffix=_a
+
+# 让 TWRP 知道是 A/B 设备，不显示"安装到 boot/recovery 分区"误导选项
+ro.boot.abtable=true
