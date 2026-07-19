@@ -1,0 +1,1 @@
+# android_device_chinatelecom_TYH212U-TWRP
