@@ -1,0 +1,11 @@
+#Dynamic partitions fstab file
+#<dev> <mnt_point> <type> <mnt_flags options>  <fs_mgr_flags>
+# TWRP 修复版：删除 avb=vbmeta_xxx 强制校验，改用 first_stage_mount + slotselect
+# 否则即使 BoardConfig 禁用了 AVB，fstab 这里仍会因 vbmeta 不匹配而拒绝挂载 vendor/system
+# (这就是原作者"开机报无权限挂载 Vendor"的直接根因)
+
+system /system ext4 ro,barrier=1 wait,logical,first_stage_mount,slotselect
+system_ext /system_ext ext4 ro,barrier=1 wait,logical,first_stage_mount,slotselect
+vendor /vendor ext4 ro,barrier=1 wait,logical,first_stage_mount,slotselect
+product /product ext4 ro,barrier=1 wait,logical,first_stage_mount,slotselect
+/dev/block/by-name/metadata /metadata    ext4 nodev,noatime,nosuid,errors=panic wait,formattable,first_stage_mount,check
