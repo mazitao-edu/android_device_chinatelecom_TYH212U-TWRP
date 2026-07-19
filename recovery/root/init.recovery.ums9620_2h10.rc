@@ -1,0 +1,53 @@
+#add for board init.rc for recovery mode
+import /init.recovery.common.rc
+
+on init
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw
+    setprop crypto.ready 1
+    # 让 TWRP 知道当前 slot，避免 A/B 操作时找不到分区
+    setprop ro.boot.slot_suffix _a
+
+on post-fs
+    # 触摸屏 + 振动器内核模块（insmod 顺序：先 ocp96011 再 ts，避免 i2c 冲突）
+    insmod /vendor/lib/modules/ocp96011.ko
+    insmod /vendor/lib/modules/omnivision_td4375_spi_ts.ko
+    insmod /vendor/lib/modules/focaltech_ft8756_spi_ts.ko
+
+on post-fs-data
+    # 给 keymaster 创建工作目录，否则 unisoc 服务启动失败 -> 解密失败
+    mkdir /vendor/lib64 0755 root root
+    mkdir /data/vendor 0771 root root
+    mkdir /data/vendor/keymaster 0771 root root
+
+on property:recovery.fastboot_mode=1
+    start vendor.boot-hal-1-0
+    start health-hal-2-0
+
+# 振动器服务
+service vendor.sprd.hardware.vibrator-service /vendor/bin/hw/vendor.sprd.hardware.vibrator-service
+    class hal
+    user system
+    group system
+    seclabel u:r:recovery:s0
+
+# 等待 keymaster 就绪 - TWRP 解密依赖此服务
+service wait_for_keymaster /system/bin/wait_for_keymaster
+    user root
+    group root system
+    priority -20
+    ioprio rt 0
+    seclabel u:r:recovery:s0
+    oneshot
+
+# 展锐 unisoc keymaster 4.1 服务（FBE 解密必需）
+# 关键修复：原代码启动的是不存在的 beanpod 服务，这里改为实际存在的 unisoc 服务
+# 路径 vendor/bin/hw/android.hardware.keymaster@4.1-unisoc.service 是 device tree 里预构建的
+service vendor.keymaster-unisoc /vendor/bin/hw/android.hardware.keymaster@4.1-unisoc.service
+    class early_hal
+    user nobody
+    group nobody system
+    seclabel u:r:recovery:s0
+    onrestart restart wait_for_keymaster
+
+on property:crypto.ready=1
+    start vendor.keymaster-unisoc
